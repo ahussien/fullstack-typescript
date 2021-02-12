@@ -1,4 +1,6 @@
-const githupApi = require('../services/githup-api');
+const githubApi = require('../services/github-api');
+const redis = require('../services/redis');
+const logger = require('../services/logger');
 
 /**
  * Get all users
@@ -10,13 +12,33 @@ const githupApi = require('../services/githup-api');
  */
 exports.search = async function (req, res, next) {
   const { type, query } = req.body;
-  
-  try {
-    let response = await githupApi.search(type, query);
-    res.json(response.data.items);
-  } catch (error) {
-    res.status(500).json(error)
-  }
+  const cachingKey = `${type}:${query}`;
+
+ // try {
+    logger.info(` Try fetching the result from Redis:${cachingKey}`);
+
+    // Try fetching the result from Redis first in case we have it cached
+    const cachedResults = await redis.getAsync(cachingKey);
+
+    // If that key exist in Redis store
+    if (cachedResults) {
+      logger.info(`${cachingKey}:Result featched succesfull from Redis`);
+      res.json(JSON.parse(cachedResults));
+    } else {
+      // Key does not exist in Redis store and Fetch directly from Githup API
+      logger.info(`${cachingKey}:Key does not exist in Redis store and Fetch directly from Githup API`);
+
+      let results = await githubApi.search(type, query);
+
+      // Save the Wikipedia API response in Redis store (key, time in sec, data); 7200 -> 120mins
+       await redis.setexAsync(cachingKey, 200, JSON.stringify(results.data.items));
+
+      res.json(results.data.items);
+    }
+  // } catch (error) {
+  //   logger.error(error);
+  //   res.status(500).json(error)
+  // }
 }
 
 /**
@@ -27,8 +49,18 @@ exports.search = async function (req, res, next) {
 * @param {Function} next
 * @return void
 */
-exports.clearCache = function (req, res, next) {
-  res.json({ name: "Ahmed cache" });
+exports.clearCache = async function (req, res, next) {
+  try {
+    logger.info(`Clear backend caching`);
+
+    await redis.flushallAsync();
+    
+    res.status(200).json(`redis cache cleared`);
+  }
+  catch (error) {
+    logger.error(error);
+    res.status(500).json(error)
+  }
 }
 
 

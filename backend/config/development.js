@@ -3,8 +3,9 @@ require('dotenv').config()
 
 module.exports = {
     env: process.env.NODE_ENV || 'development',
+    redisURL: process.env.REDIS_URL || 'redis://127.0.0.1:6379/1',
     port: process.env.PORT || 8080,
-    trustProxy: process.env.TRUST_PROXY || 'no',
+    trustProxy: process.env.TRUST_PROXY || 'no development',
     bugsnagKey: process.env.BUGSNAG_KEY || false,
     secureMode: process.env.SECURE_MODE || false,
     secret: process.env.SECRET || 'lakikihdgdfdjjjdgd67264664vdjhjdyncmxuei8336%%^#%gdvdhj????jjhdghduue',

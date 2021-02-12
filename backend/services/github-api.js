@@ -1,4 +1,5 @@
 const axios = require('axios');
+const logger = require('../services/logger');
 
 const usersUrl = 'https://api.github.com/search/users';
 const repositoriesUrl = 'https://api.github.com/search/repositories';
@@ -11,6 +12,9 @@ const repositoriesUrl = 'https://api.github.com/search/repositories';
  * @return void
  */
 exports.search = (searchType, searchText) => {
+
+  logger.info('search requested!', { searchType: `${searchType}`, searchText: `${searchText}` });
+
   if (searchType === 'users') {
     return fetchUsers(searchText);
   }
