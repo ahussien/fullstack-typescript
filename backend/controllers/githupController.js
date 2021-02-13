@@ -1,6 +1,7 @@
 const githubApi = require('../services/github-api');
 const redis = require('../services/redis');
 const logger = require('../services/logger');
+const cache = require('../services/cache');
 
 /**
  * Get all users
@@ -10,35 +11,36 @@ const logger = require('../services/logger');
  * @param {Function} next
  * @return void
  */
-exports.search = async function (req, res, next) {
+exports.search = async (req, res, next) => {
   const { type, query } = req.body;
   const cachingKey = `${type}:${query}`;
 
- // try {
+  try {
     logger.info(` Try fetching the result from Redis:${cachingKey}`);
 
     // Try fetching the result from Redis first in case we have it cached
-    const cachedResults = await redis.getAsync(cachingKey);
-
     // If that key exist in Redis store
-    if (cachedResults) {
+    if (await cache.has(cachingKey)) {
+      const cachedResults = await cache.get(cachingKey);
+
       logger.info(`${cachingKey}:Result featched succesfull from Redis`);
-      res.json(JSON.parse(cachedResults));
+
+      res.json(cachedResults);
     } else {
       // Key does not exist in Redis store and Fetch directly from Githup API
       logger.info(`${cachingKey}:Key does not exist in Redis store and Fetch directly from Githup API`);
 
       let results = await githubApi.search(type, query);
 
-      // Save the Wikipedia API response in Redis store (key, time in sec, data); 7200 -> 120mins
-       await redis.setexAsync(cachingKey, 200, JSON.stringify(results.data.items));
+      // Save the API response in the cache (key, time in sec, data); 7200 -> 120mins
+      cache.set(cachingKey, results.data.items, 200);
 
       res.json(results.data.items);
     }
-  // } catch (error) {
-  //   logger.error(error);
-  //   res.status(500).json(error)
-  // }
+  } catch (error) {
+    logger.error(error);
+    res.status(500).json(error)
+  }
 }
 
 /**
@@ -49,12 +51,12 @@ exports.search = async function (req, res, next) {
 * @param {Function} next
 * @return void
 */
-exports.clearCache = async function (req, res, next) {
+exports.clearCache = async (req, res, next) => {
   try {
     logger.info(`Clear backend caching`);
 
-    await redis.flushallAsync();
-    
+    await cache.clear();
+
     res.status(200).json(`redis cache cleared`);
   }
   catch (error) {
