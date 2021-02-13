@@ -26,8 +26,7 @@ exports.clear = () => {
 exports.has = async (key) => {
   logger.debug(`cache:has ${key}`);
   const reply = await redisClient.existsAsync(key)
-  console.log(reply);
-
+  
   if (reply === 1) {
     return true;
 
