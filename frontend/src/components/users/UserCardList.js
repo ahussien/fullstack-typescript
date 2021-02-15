@@ -12,7 +12,7 @@ class UserCardList extends Component {
             link={item.html_url}
             title={item.name}
             description={item.description}
-            image={item.owner.avatar_url}
+            image={item.avatar_url}
           />
         ))}
       </Container>

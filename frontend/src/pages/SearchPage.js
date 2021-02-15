@@ -3,31 +3,64 @@ import _ from 'lodash';
 import styled from 'styled-components'
 import SearchBox from '../components/search/SearchBox'
 import RepoCardList from '../components/repositories/RepoCardList'
+import UserCardList from '../components/users/UserCardList'
 import Api from "../services/Api";
+import styles from '../styles.module.css'
 
 const SearchPage = () => {
-  const [searchResults, setSearchResults] = React.useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const [keyword, setKeyword] = useState('')
-  const [errorMssg, setErrorMssg] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [status, setStatus] = useState('');
+  const [searchType, setSearchType] = useState('');
+  const [searchText, setSearchText] = useState('');
+
+  /**
+ * This will be called every time there is
+ * a change in the input
+ * @param {*} { target: { value } }
+ */
+  const isShownMiddle = searchText.length < 3 || searchText === ''
 
   /**
    * This will be called every time there is
    * a change in the input
    * @param {*} { target: { value } }
    */
-  const debouncedSearch = useRef(_.debounce(searchTerm => searchRepos(searchTerm), 1000)).current;
+  const debouncedSearch = useRef(_.debounce((searchType, searchText) => search(searchType, searchText), 1000)).current;
+
+  /**
+ * This will be called every time there is
+ * a change in the input
+ * @param {*} { target: { value } }
+ */
+  const Status = ({ status }) => {
+    if (status === '') { return (<div></div>) }
+    if (status === 'loading') { return (<div>Loading Data ...</div>) }
+    if (status === 'error') { return (<div>Something went wrong ...</div>) }
+    return null
+  }
 
   /**
    * This will be called every time there is
    * a change in the input
    * @param {*} { target: { value } }
    */
-  const onChange = ({ target: { value } }) => {
-    setKeyword(value);
-    if (value.length >= 3) {
-      debouncedSearch(value);
+  const resetSearchPage = () => {
+    setSearchResults([]);
+    setStatus('');
+  };
+
+  /**
+   * This will be called every time there is
+   * a change in the input
+   * @param {*} { target: { value } }
+   */
+  const onSearchChange = ({ searchType, searchText }) => {
+    setSearchType(searchType);
+    setSearchText(searchText);
+    resetSearchPage();
+
+    if (searchText.length >= 3) {
+      debouncedSearch(searchType, searchText);
     }
   };
 
@@ -36,41 +69,38 @@ const SearchPage = () => {
    * to the API.
    * @param {*} value
    */
-  const searchRepos = async (keyword) => {
-    setIsError(false);
-    setIsLoading(true);
+  const search = async (searchType, searchText) => {
+    setStatus('loading');
     try {
-      if (keyword) {
-        const { data } = await Api.getSearchGithub('repositories', keyword)
-        setSearchResults(data)
-      }
+      const { data } = await Api.getSearchGithub(searchType, searchText)
+      setSearchResults(data)
+      setStatus('');
     } catch (error) {
-      setIsError(true);
+      setStatus('error');
     }
-    setIsLoading(false);
   }
 
+  /**
+   * This will be called every time there is
+   * a change in the input
+   * @param {*} { target: { value } }
+   */
   return (
-    <Container>
+    <div className={isShownMiddle ? styles.containercentred : styles.container}>
       <SearchBox
         placeholder="Enter Repository Name"
         buttonText="Search"
-        onSubmit={value => searchRepos(value)}
-        onChange={onChange}
+        onSearchChange={onSearchChange}
       />
 
-      { isLoading
-        ? (<div>Loading ...</div>)
-        : (<RepoCardList items={searchResults} />)}
+      <Status status={status} />
 
-      {errorMssg}
-    </Container>
+      { searchType === 'repositories'
+        ? (<RepoCardList items={searchResults} />)
+        : (<UserCardList items={searchResults} />)
+      }
+    </div>
   )
 }
 
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`
 export default SearchPage

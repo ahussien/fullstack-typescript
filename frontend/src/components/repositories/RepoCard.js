@@ -19,10 +19,17 @@ class RepoCard extends Component {
 
 const Container = styled.div`
   flex: 1;
-  flex-basis: 15%;
+  flex-basis: 25%;
   margin: 15px;
-  border: solid 2px #3a3a3a;
-  border-radius: 5px;
+  border: solid 1px lightgray;
+  // border-radius: 5px;
+ 
+  @media (max-width: 768px) {
+    & {
+      flex: 1;
+      flex-basis: 40%;
+    }
+  } 
 `
 
 const CardBody = styled.div`
@@ -40,7 +47,7 @@ const Description = styled.p`
 `
 
 const Image = styled.img`
-  width: 100%;
+  width: 30%;
 `
 
 export default RepoCard
