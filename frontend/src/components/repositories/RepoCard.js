@@ -22,6 +22,7 @@ const Container = styled.div`
   flex-basis: 25%;
   margin: 15px;
   border: solid 1px lightgray;
+  text-align: center;
   // border-radius: 5px;
  
   @media (max-width: 768px) {
